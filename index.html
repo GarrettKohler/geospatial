@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal Portfolio</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body class="grey lighten-4">
+  <nav class="z-depth-0 transparent">
+    <div class="nav-wrapper container">
+      <a href="#" class="brand-logo teal-text text-darken-3">My Portfolio</a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down">
+        <li><a class="teal-text text-darken-2" href="#about">About</a></li>
+        <li><a class="teal-text text-darken-2" href="#systems">Data Systems</a></li>
+        <li><a class="teal-text text-darken-2" href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="section hero">
+    <div class="container">
+      <div class="row valign-wrapper">
+        <div class="col s12 m7">
+          <span class="chip teal lighten-5 teal-text text-darken-2">Data storyteller &amp; builder</span>
+          <h1 class="header">Hi, I'm Alex Rivera</h1>
+          <p class="flow-text">I design and build data-driven products that reveal insights, streamline operations, and help teams move fast. This portfolio collects my work and the systems we'll be launching soon.</p>
+          <div class="action-buttons">
+            <a class="btn-large waves-effect waves-light teal" href="#systems">Explore systems</a>
+            <a class="btn-large waves-effect teal lighten-5 teal-text text-darken-2" href="#contact">Get in touch</a>
+          </div>
+        </div>
+        <div class="col s12 m5">
+          <div class="card z-depth-1 profile-card">
+            <div class="card-content center">
+              <i class="material-icons large teal-text text-darken-2">insert_chart_outlined</i>
+              <h5 class="card-title">Data Focused</h5>
+              <p>Analytics architecture, geospatial analysis, and human-friendly dashboards.</p>
+            </div>
+            <div class="card-action center">
+              <span class="badge new teal lighten-2" data-badge-caption="projects">5</span>
+              <span class="badge new teal lighten-2" data-badge-caption="systems">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="about" class="section white">
+      <div class="container">
+        <div class="row">
+          <div class="col s12 l6">
+            <h4 class="teal-text text-darken-3">About</h4>
+            <p>I'm a data systems engineer with a focus on geospatial analytics, data quality, and product design. I enjoy pairing clear communication with thoughtful architecture to help teams understand, trust, and use their data.</p>
+          </div>
+          <div class="col s12 l6">
+            <ul class="collection z-depth-1">
+              <li class="collection-item avatar">
+                <i class="material-icons circle teal">layers</i>
+                <span class="title">Stack</span>
+                <p>Python, PostGIS, Airflow, dbt, BigQuery</p>
+              </li>
+              <li class="collection-item avatar">
+                <i class="material-icons circle teal">map</i>
+                <span class="title">Geospatial</span>
+                <p>Routing, coverage analysis, and spatial data cleanup</p>
+              </li>
+              <li class="collection-item avatar">
+                <i class="material-icons circle teal">people</i>
+                <span class="title">Collaboration</span>
+                <p>Embedded with product teams, partnering with stakeholders</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="systems" class="section grey lighten-4">
+      <div class="container">
+        <div class="row">
+          <div class="col s12">
+            <h4 class="teal-text text-darken-3">Data systems (coming soon)</h4>
+            <p class="flow-text">These cards represent the platforms we'll be building. Each link will evolve into detailed pages with architecture, demos, and launch notes.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col s12 m4">
+            <div class="card hoverable">
+              <div class="card-content">
+                <span class="card-title">Geospatial Coverage</span>
+                <p>Polygon tooling for coverage analysis, map matching, and service area reporting.</p>
+              </div>
+              <div class="card-action">
+                <a href="#">View blueprint</a>
+              </div>
+            </div>
+          </div>
+          <div class="col s12 m4">
+            <div class="card hoverable">
+              <div class="card-content">
+                <span class="card-title">Data Quality Hub</span>
+                <p>Automated anomaly detection, lineage visualization, and SLA tracking.</p>
+              </div>
+              <div class="card-action">
+                <a href="#">View blueprint</a>
+              </div>
+            </div>
+          </div>
+          <div class="col s12 m4">
+            <div class="card hoverable">
+              <div class="card-content">
+                <span class="card-title">Analytics Delivery</span>
+                <p>Curated semantic models, self-serve dashboards, and dataset contracts.</p>
+              </div>
+              <div class="card-action">
+                <a href="#">View blueprint</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section white">
+      <div class="container">
+        <div class="row">
+          <div class="col s12 m6">
+            <h4 class="teal-text text-darken-3">Contact</h4>
+            <p>Have a question or want to collaborate? Reach out and let's start planning.</p>
+            <div class="chips">
+              <div class="chip">email@alexrivera.dev</div>
+              <div class="chip">LinkedIn</div>
+              <div class="chip">GitHub</div>
+            </div>
+          </div>
+          <div class="col s12 m6">
+            <form>
+              <div class="input-field">
+                <input id="name" type="text" class="validate" required>
+                <label for="name">Name</label>
+              </div>
+              <div class="input-field">
+                <input id="email" type="email" class="validate" required>
+                <label for="email">Email</label>
+              </div>
+              <div class="input-field">
+                <textarea id="message" class="materialize-textarea" required></textarea>
+                <label for="message">Project details</label>
+              </div>
+              <button class="btn waves-effect waves-light teal" type="submit">Send message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-footer teal">
+    <div class="container">
+      <div class="row">
+        <div class="col s12 m6">
+          <h5 class="white-text">Alex Rivera</h5>
+          <p class="grey-text text-lighten-4">Building reliable data systems that people trust.</p>
+        </div>
+        <div class="col s12 m6">
+          <ul>
+            <li><a class="grey-text text-lighten-3" href="#about">About</a></li>
+            <li><a class="grey-text text-lighten-3" href="#systems">Data systems</a></li>
+            <li><a class="grey-text text-lighten-3" href="#contact">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+        © 2024 Alex Rivera
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      M.Sidenav.init(elems);
+    });
+  </script>
+</body>
+</html>
