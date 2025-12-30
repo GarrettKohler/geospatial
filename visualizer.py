@@ -5,12 +5,16 @@ This module provides flexible map rendering that can display
 arbitrary datasets with configurable styling and colormaps.
 """
 
+import base64
+import io
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geopandas as gpd
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for web
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -300,6 +304,76 @@ class MapVisualizer:
             bbox_inches='tight',
             **kwargs
         )
+
+    def to_bytes(
+        self,
+        fig: Optional[Figure] = None,
+        format: str = "png",
+        dpi: int = 150
+    ) -> bytes:
+        """Render the visualization to bytes.
+
+        Args:
+            fig: Figure to render (uses current figure if None)
+            format: Output format (png, svg, pdf, etc.)
+            dpi: Resolution in dots per inch
+
+        Returns:
+            Bytes of the rendered image
+        """
+        if fig is None:
+            fig = plt.gcf()
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format=format, dpi=dpi, bbox_inches='tight')
+        buf.seek(0)
+        return buf.getvalue()
+
+    def to_base64(
+        self,
+        fig: Optional[Figure] = None,
+        format: str = "png",
+        dpi: int = 150
+    ) -> str:
+        """Render the visualization to a base64-encoded string.
+
+        Args:
+            fig: Figure to render (uses current figure if None)
+            format: Output format (png, svg, etc.)
+            dpi: Resolution in dots per inch
+
+        Returns:
+            Base64-encoded string of the rendered image
+        """
+        image_bytes = self.to_bytes(fig, format, dpi)
+        return base64.b64encode(image_bytes).decode('utf-8')
+
+    def to_data_uri(
+        self,
+        fig: Optional[Figure] = None,
+        format: str = "png",
+        dpi: int = 150
+    ) -> str:
+        """Render the visualization to a data URI for embedding in HTML.
+
+        Args:
+            fig: Figure to render (uses current figure if None)
+            format: Output format (png, svg, etc.)
+            dpi: Resolution in dots per inch
+
+        Returns:
+            Data URI string suitable for use in img src attribute
+        """
+        b64 = self.to_base64(fig, format, dpi)
+        mime_types = {
+            "png": "image/png",
+            "svg": "image/svg+xml",
+            "pdf": "application/pdf",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg"
+        }
+        mime = mime_types.get(format.lower(), f"image/{format}")
+        return f"data:{mime};base64,{b64}"
 
 
 def plot_map(

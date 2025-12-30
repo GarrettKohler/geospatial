@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Visualize - Geospatial Visualizer{% endblock %}
+
+{% block content %}
+<div class="grid grid-sidebar">
+    <!-- Sidebar with controls -->
+    <div class="sidebar">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Dataset Selection</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="dataset">Dataset</label>
+                <select id="dataset" name="dataset">
+                    <option value="">Select a dataset...</option>
+                    {% for name, description in datasets.items() %}
+                    <option value="{{ name }}">{{ description }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="value_column">Value Column</label>
+                <select id="value_column" name="value_column" disabled>
+                    <option value="">Select dataset first...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Visualization Options</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="colormap">Color Scale</label>
+                <select id="colormap" name="colormap">
+                    {% for cmap in colormaps %}
+                    <option value="{{ cmap }}" {% if cmap == 'viridis' %}selected{% endif %}>
+                        {{ cmap }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Map Title</label>
+                <input type="text" id="title" name="title" placeholder="Enter map title...">
+            </div>
+
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="figsize_w">Width</label>
+                    <input type="number" id="figsize_w" name="figsize_w" value="12" min="4" max="20">
+                </div>
+                <div class="form-group">
+                    <label for="figsize_h">Height</label>
+                    <input type="number" id="figsize_h" name="figsize_h" value="8" min="4" max="20">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="dpi">Resolution (DPI)</label>
+                <input type="number" id="dpi" name="dpi" value="100" min="50" max="300">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Spatial Join (Optional)</h2>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="enable_spatial_join"> Enable Spatial Join
+                </label>
+            </div>
+
+            <div id="spatial_join_options" class="hidden">
+                <div class="form-group">
+                    <label for="boundary_dataset">Boundary Dataset</label>
+                    <select id="boundary_dataset" name="boundary_dataset">
+                        <option value="">Select boundaries...</option>
+                        {% for name, description in datasets.items() %}
+                        <option value="{{ name }}">{{ description }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="aggregation">Aggregation Method</label>
+                    <select id="aggregation" name="aggregation">
+                        {% for agg in aggregations %}
+                        <option value="{{ agg }}" {% if agg == 'mean' %}selected{% endif %}>
+                            {{ agg | capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="filter_ids">Filter IDs (comma-separated)</label>
+                    <input type="text" id="filter_ids" name="filter_ids" placeholder="e.g., 48201, 48202, 48203">
+                </div>
+            </div>
+        </div>
+
+        <button id="visualize-btn" class="btn btn-primary" style="width: 100%;">
+            Generate Visualization
+        </button>
+    </div>
+
+    <!-- Main visualization area -->
+    <div class="card" style="position: relative;">
+        <div class="card-header flex justify-between items-center">
+            <h2 class="card-title">Map Visualization</h2>
+            <div id="download-buttons" class="hidden">
+                <button id="download-png" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                    Download PNG
+                </button>
+                <button id="download-svg" class="btn btn-secondary">
+                    Download SVG
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="error-container" class="hidden">
+            <div class="alert alert-error" id="error-message"></div>
+        </div>
+
+        <div id="viz-container" class="viz-container">
+            <div class="viz-placeholder">
+                <p style="font-size: 1.25rem; margin-bottom: 0.5rem;">Select a dataset to visualize</p>
+                <p>Choose a dataset from the sidebar and configure your visualization options</p>
+            </div>
+        </div>
+
+        <div id="viz-info" class="mt-2 text-muted hidden">
+            <span id="feature-count"></span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const datasetSelect = document.getElementById('dataset');
+    const valueColumnSelect = document.getElementById('value_column');
+    const enableSpatialJoin = document.getElementById('enable_spatial_join');
+    const spatialJoinOptions = document.getElementById('spatial_join_options');
+    const visualizeBtn = document.getElementById('visualize-btn');
+    const vizContainer = document.getElementById('viz-container');
+    const loading = document.getElementById('loading');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    const downloadButtons = document.getElementById('download-buttons');
+    const vizInfo = document.getElementById('viz-info');
+    const featureCount = document.getElementById('feature-count');
+
+    let currentImageData = null;
+
+    // Toggle spatial join options
+    enableSpatialJoin.addEventListener('change', function() {
+        spatialJoinOptions.classList.toggle('hidden', !this.checked);
+    });
+
+    // Load columns when dataset changes
+    datasetSelect.addEventListener('change', async function() {
+        const dataset = this.value;
+        valueColumnSelect.innerHTML = '<option value="">Loading...</option>';
+        valueColumnSelect.disabled = true;
+
+        if (!dataset) {
+            valueColumnSelect.innerHTML = '<option value="">Select dataset first...</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/datasets/${dataset}/columns`);
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            valueColumnSelect.innerHTML = '<option value="">Select column...</option>';
+            data.columns.forEach(col => {
+                if (col !== 'geometry') {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    if (col === data.value_column) {
+                        option.selected = true;
+                    }
+                    valueColumnSelect.appendChild(option);
+                }
+            });
+            valueColumnSelect.disabled = false;
+        } catch (error) {
+            valueColumnSelect.innerHTML = `<option value="">Error: ${error.message}</option>`;
+        }
+    });
+
+    // Generate visualization
+    visualizeBtn.addEventListener('click', async function() {
+        const useSpatialJoin = enableSpatialJoin.checked;
+
+        loading.classList.remove('hidden');
+        errorContainer.classList.add('hidden');
+        downloadButtons.classList.add('hidden');
+        vizInfo.classList.add('hidden');
+
+        try {
+            let endpoint, payload;
+
+            if (useSpatialJoin) {
+                endpoint = '/api/visualize/spatial-join';
+                const filterIds = document.getElementById('filter_ids').value
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(s => s);
+
+                payload = {
+                    boundary_dataset: document.getElementById('boundary_dataset').value,
+                    value_dataset: datasetSelect.value,
+                    filter_ids: filterIds,
+                    aggregation: document.getElementById('aggregation').value,
+                    colormap: document.getElementById('colormap').value,
+                    title: document.getElementById('title').value,
+                    figsize_w: parseInt(document.getElementById('figsize_w').value),
+                    figsize_h: parseInt(document.getElementById('figsize_h').value),
+                    dpi: parseInt(document.getElementById('dpi').value),
+                };
+            } else {
+                endpoint = '/api/visualize';
+                payload = {
+                    dataset: datasetSelect.value,
+                    value_column: valueColumnSelect.value,
+                    colormap: document.getElementById('colormap').value,
+                    title: document.getElementById('title').value,
+                    figsize_w: parseInt(document.getElementById('figsize_w').value),
+                    figsize_h: parseInt(document.getElementById('figsize_h').value),
+                    dpi: parseInt(document.getElementById('dpi').value),
+                };
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Display the image
+            currentImageData = data.image;
+            vizContainer.innerHTML = `<img src="${data.image}" alt="Map Visualization">`;
+            downloadButtons.classList.remove('hidden');
+
+            if (data.num_features) {
+                featureCount.textContent = `Showing ${data.num_features} features`;
+                vizInfo.classList.remove('hidden');
+            }
+
+        } catch (error) {
+            errorMessage.textContent = error.message;
+            errorContainer.classList.remove('hidden');
+        } finally {
+            loading.classList.add('hidden');
+        }
+    });
+
+    // Download handlers
+    document.getElementById('download-png').addEventListener('click', function() {
+        if (currentImageData) {
+            const link = document.createElement('a');
+            link.download = 'map.png';
+            link.href = currentImageData;
+            link.click();
+        }
+    });
+
+    document.getElementById('download-svg').addEventListener('click', async function() {
+        // Re-render as SVG
+        const payload = {
+            dataset: datasetSelect.value,
+            value_column: valueColumnSelect.value,
+            colormap: document.getElementById('colormap').value,
+            title: document.getElementById('title').value,
+            figsize_w: parseInt(document.getElementById('figsize_w').value),
+            figsize_h: parseInt(document.getElementById('figsize_h').value),
+            dpi: parseInt(document.getElementById('dpi').value),
+            format: 'svg',
+        };
+
+        try {
+            const response = await fetch('/api/visualize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+
+            if (data.image) {
+                const link = document.createElement('a');
+                link.download = 'map.svg';
+                link.href = data.image;
+                link.click();
+            }
+        } catch (error) {
+            alert('Failed to generate SVG: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}

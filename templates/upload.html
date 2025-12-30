@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Dataset - Geospatial Visualizer{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">Upload Dataset</h1>
+<p class="text-muted mb-3">
+    Upload your own geospatial dataset to visualize. Supported formats include
+    Shapefile (.shp), GeoJSON (.geojson), GeoPackage (.gpkg), and more.
+</p>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Upload File</h2>
+        </div>
+
+        <form id="upload-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Select File</label>
+                <input type="file" id="file" name="file" accept=".shp,.geojson,.json,.gpkg,.gdb,.zip">
+                <p class="text-muted mt-1" style="font-size: 0.875rem;">
+                    For Shapefiles, upload a .zip containing all related files (.shp, .shx, .dbf, .prj)
+                </p>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Upload
+            </button>
+        </form>
+
+        <div id="upload-loading" class="mt-2 hidden">
+            <div class="flex items-center gap-2">
+                <div class="spinner" style="width: 20px; height: 20px;"></div>
+                <span>Uploading...</span>
+            </div>
+        </div>
+
+        <div id="upload-error" class="alert alert-error mt-2 hidden"></div>
+        <div id="upload-success" class="alert alert-success mt-2 hidden"></div>
+    </div>
+
+    <div class="card" id="register-card" class="hidden">
+        <div class="card-header">
+            <h2 class="card-title">Register Dataset</h2>
+        </div>
+
+        <p class="text-muted mb-2">
+            Configure how your dataset should be used in visualizations.
+        </p>
+
+        <form id="register-form">
+            <div class="form-group">
+                <label for="dataset_name">Dataset Name</label>
+                <input type="text" id="dataset_name" name="name" placeholder="my_dataset" required>
+            </div>
+
+            <div class="form-group">
+                <label for="display_name">Display Name</label>
+                <input type="text" id="display_name" name="display_name" placeholder="My Custom Dataset">
+            </div>
+
+            <div class="form-group">
+                <label for="id_column">ID Column</label>
+                <select id="id_column" name="id_column" required>
+                    <option value="">Select column...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="value_column">Value Column (for visualization)</label>
+                <select id="value_column" name="value_column">
+                    <option value="">Select column...</option>
+                </select>
+            </div>
+
+            <input type="hidden" id="filepath" name="path">
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Register Dataset
+            </button>
+        </form>
+
+        <div id="register-error" class="alert alert-error mt-2 hidden"></div>
+        <div id="register-success" class="alert alert-success mt-2 hidden"></div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">Registered Datasets</h2>
+    </div>
+
+    <div id="datasets-list">
+        <p class="text-muted">Loading datasets...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('upload-form');
+    const registerForm = document.getElementById('register-form');
+    const registerCard = document.getElementById('register-card');
+    const uploadLoading = document.getElementById('upload-loading');
+    const uploadError = document.getElementById('upload-error');
+    const uploadSuccess = document.getElementById('upload-success');
+    const registerError = document.getElementById('register-error');
+    const registerSuccess = document.getElementById('register-success');
+    const idColumnSelect = document.getElementById('id_column');
+    const valueColumnSelect = document.getElementById('value_column');
+    const filepathInput = document.getElementById('filepath');
+    const datasetsList = document.getElementById('datasets-list');
+
+    // Load existing datasets
+    async function loadDatasets() {
+        try {
+            const response = await fetch('/api/datasets');
+            const datasets = await response.json();
+
+            if (Object.keys(datasets).length === 0) {
+                datasetsList.innerHTML = '<p class="text-muted">No datasets registered yet.</p>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="border-bottom: 1px solid var(--border-color);">';
+            html += '<th style="text-align: left; padding: 0.75rem;">Name</th>';
+            html += '<th style="text-align: left; padding: 0.75rem;">Description</th>';
+            html += '</tr></thead><tbody>';
+
+            for (const [name, description] of Object.entries(datasets)) {
+                html += `<tr style="border-bottom: 1px solid var(--border-color);">`;
+                html += `<td style="padding: 0.75rem; font-weight: 500;">${name}</td>`;
+                html += `<td style="padding: 0.75rem;">${description}</td>`;
+                html += `</tr>`;
+            }
+
+            html += '</tbody></table>';
+            datasetsList.innerHTML = html;
+        } catch (error) {
+            datasetsList.innerHTML = `<p class="text-muted">Error loading datasets: ${error.message}</p>`;
+        }
+    }
+
+    loadDatasets();
+
+    // Handle file upload
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('file');
+        if (!fileInput.files.length) {
+            uploadError.textContent = 'Please select a file';
+            uploadError.classList.remove('hidden');
+            return;
+        }
+
+        uploadLoading.classList.remove('hidden');
+        uploadError.classList.add('hidden');
+        uploadSuccess.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            uploadSuccess.textContent = `File uploaded successfully! Found ${data.num_features} features.`;
+            uploadSuccess.classList.remove('hidden');
+
+            // Populate column selects
+            idColumnSelect.innerHTML = '<option value="">Select column...</option>';
+            valueColumnSelect.innerHTML = '<option value="">Select column...</option>';
+
+            data.columns.forEach(col => {
+                if (col !== 'geometry') {
+                    idColumnSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                    valueColumnSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                }
+            });
+
+            filepathInput.value = data.filepath;
+            document.getElementById('dataset_name').value = data.filename.replace(/\.[^.]+$/, '');
+
+            registerCard.classList.remove('hidden');
+
+        } catch (error) {
+            uploadError.textContent = error.message;
+            uploadError.classList.remove('hidden');
+        } finally {
+            uploadLoading.classList.add('hidden');
+        }
+    });
+
+    // Handle dataset registration
+    registerForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        registerError.classList.add('hidden');
+        registerSuccess.classList.add('hidden');
+
+        const payload = {
+            name: document.getElementById('dataset_name').value,
+            display_name: document.getElementById('display_name').value,
+            path: filepathInput.value,
+            id_column: idColumnSelect.value,
+            value_column: valueColumnSelect.value || null,
+        };
+
+        try {
+            const response = await fetch('/api/datasets/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            registerSuccess.textContent = `Dataset "${payload.name}" registered successfully!`;
+            registerSuccess.classList.remove('hidden');
+
+            // Reload datasets list
+            loadDatasets();
+
+            // Reset forms
+            uploadForm.reset();
+            registerForm.reset();
+            registerCard.classList.add('hidden');
+
+        } catch (error) {
+            registerError.textContent = error.message;
+            registerError.classList.remove('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}

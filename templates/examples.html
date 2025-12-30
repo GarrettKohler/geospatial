@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Examples - Geospatial Visualizer{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">Visualization Examples</h1>
+<p class="text-muted mb-3">
+    Click on any example below to see the visualization. These examples demonstrate
+    the various capabilities of the geospatial mapping toolkit.
+</p>
+
+<div class="grid grid-3">
+    <div class="card example-card" data-example="walkability_basic">
+        <div class="preview">
+            <span>1</span>
+        </div>
+        <h3 class="mb-1">Basic Walkability Map</h3>
+        <p class="text-muted">
+            Simple visualization of the National Walkability Index using the viridis colormap.
+        </p>
+    </div>
+
+    <div class="card example-card" data-example="walkability_styled">
+        <div class="preview" style="background: linear-gradient(135deg, #1a365d 0%, #2dd4bf 100%);">
+            <span>2</span>
+        </div>
+        <h3 class="mb-1">Styled Walkability Map</h3>
+        <p class="text-muted">
+            Custom styling with YlGnBu colormap, white edges, and transparency effects.
+        </p>
+    </div>
+
+    <div class="card example-card" data-example="spatial_join_mean">
+        <div class="preview" style="background: linear-gradient(135deg, #dc2626 0%, #fbbf24 50%, #22c55e 100%);">
+            <span>3</span>
+        </div>
+        <h3 class="mb-1">Spatial Join - Mean</h3>
+        <p class="text-muted">
+            Census block walkability aggregated to ZIP codes using mean aggregation.
+        </p>
+    </div>
+
+    <div class="card example-card" data-example="spatial_join_sum">
+        <div class="preview" style="background: linear-gradient(135deg, #fee2e2 0%, #dc2626 100%);">
+            <span>4</span>
+        </div>
+        <h3 class="mb-1">Spatial Join - Sum</h3>
+        <p class="text-muted">
+            Census block walkability aggregated to ZIP codes using sum aggregation.
+        </p>
+    </div>
+
+    <div class="card example-card" data-example="comparison">
+        <div class="preview" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #f59e0b 100%);">
+            <span>5</span>
+        </div>
+        <h3 class="mb-1">Colormap Comparison</h3>
+        <p class="text-muted">
+            Side-by-side comparison of different colormaps on the same dataset.
+        </p>
+    </div>
+</div>
+
+<!-- Result display area -->
+<div id="result-container" class="card mt-3 hidden">
+    <div class="card-header flex justify-between items-center">
+        <div>
+            <h2 class="card-title" id="result-title">Example Result</h2>
+            <p class="text-muted" id="result-description"></p>
+        </div>
+        <button id="close-result" class="btn btn-secondary">Close</button>
+    </div>
+
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="error-container" class="hidden">
+        <div class="alert alert-error" id="error-message"></div>
+    </div>
+
+    <div id="result-image-container" class="viz-container">
+    </div>
+
+    <div id="result-info" class="mt-2 text-muted hidden">
+        <span id="result-features"></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exampleCards = document.querySelectorAll('.example-card');
+    const resultContainer = document.getElementById('result-container');
+    const resultTitle = document.getElementById('result-title');
+    const resultDescription = document.getElementById('result-description');
+    const resultImageContainer = document.getElementById('result-image-container');
+    const resultInfo = document.getElementById('result-info');
+    const resultFeatures = document.getElementById('result-features');
+    const loading = document.getElementById('loading');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    const closeBtn = document.getElementById('close-result');
+
+    exampleCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            const exampleName = this.dataset.example;
+
+            resultContainer.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            errorContainer.classList.add('hidden');
+            resultInfo.classList.add('hidden');
+            resultImageContainer.innerHTML = '';
+
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const response = await fetch(`/api/examples/${exampleName}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                resultTitle.textContent = data.title;
+                resultDescription.textContent = data.description;
+                resultImageContainer.innerHTML = `<img src="${data.image}" alt="${data.title}">`;
+
+                if (data.num_features) {
+                    resultFeatures.textContent = `Features: ${data.num_features}`;
+                    resultInfo.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorContainer.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        });
+    });
+
+    closeBtn.addEventListener('click', function() {
+        resultContainer.classList.add('hidden');
+    });
+});
+</script>
+{% endblock %}
