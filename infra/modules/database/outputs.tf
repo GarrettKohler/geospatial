@@ -22,3 +22,9 @@ output "admin_username" {
   description = "Administrator username"
   value       = var.admin_username
 }
+
+output "admin_password" {
+  description = "Administrator password"
+  value       = random_password.postgres.result
+  sensitive   = true
+}

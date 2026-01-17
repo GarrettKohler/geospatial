@@ -76,3 +76,15 @@ module "container_apps" {
 
   log_analytics_workspace_id = module.ml_workspace.log_analytics_workspace_id
 }
+
+# Database Schema Module - Create tables and PostGIS objects
+module "database_schema" {
+  source = "./modules/database-schema"
+
+  server_fqdn    = module.database.server_fqdn
+  database_name  = module.database.database_name
+  admin_username = var.database_admin_username
+  admin_password = module.database.admin_password
+
+  depends_on = [module.database]
+}
