@@ -1,6 +1,19 @@
 # Database Schema Module
 # Creates: PostGIS extension, tables for DOOH site optimization
 
+terraform {
+  required_providers {
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "~> 1.21"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+  }
+}
+
 # Enable PostGIS extension in the application database
 resource "postgresql_extension" "postgis" {
   name     = "postgis"
